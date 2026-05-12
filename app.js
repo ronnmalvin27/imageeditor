@@ -12,6 +12,7 @@ let userImage = null;
 let userImageDims = { w: 0, h: 0 };
 let accessories = [];
 let selectedAccessory = null;
+let hoveredAccessory = null;
 let historyStack = [];
 
 let dragOffset = { x: 0, y: 0 };
@@ -93,13 +94,14 @@ canvas.addEventListener('mousedown', e => {
   for (let i = accessories.length - 1; i >= 0; i--) {
     const acc = accessories[i];
 
-    // Rotate handle (blue) - rotated correctly
+    // Rotate handle (blue) - rotated
     const cx = acc.x + acc.width / 2;
     const cy = acc.y + acc.height / 2;
     const handleOffset = { x: 0, y: -acc.height/2 - 20 };
     const angle = acc.rotation * Math.PI / 180;
     const handleX = cx + handleOffset.x * Math.cos(angle) - handleOffset.y * Math.sin(angle);
     const handleY = cy + handleOffset.x * Math.sin(angle) + handleOffset.y * Math.cos(angle);
+
     if (mx >= handleX - 5 && mx <= handleX + 5 && my >= handleY - 5 && my <= handleY + 5) {
       selectedAccessory = acc;
       isRotating = true;
@@ -128,10 +130,31 @@ canvas.addEventListener('mousedown', e => {
 
 // Mouse move
 canvas.addEventListener('mousemove', e => {
-  if (!selectedAccessory) return;
   const rect = canvas.getBoundingClientRect();
   const mx = e.clientX - rect.left;
   const my = e.clientY - rect.top;
+
+  // Hover detection
+  hoveredAccessory = null;
+  for (let i = accessories.length - 1; i >= 0; i--) {
+    if (isMouseOnAccessory(accessories[i], mx, my)) {
+      hoveredAccessory = accessories[i];
+      break;
+    }
+  }
+
+  // Cursor changes
+  if (hoveredAccessory) {
+    canvas.style.cursor = 'move';
+  } else {
+    canvas.style.cursor = 'default';
+  }
+
+  if (!selectedAccessory) {
+    drawCanvas();
+  }
+
+  if (!selectedAccessory) return;
 
   if (isDragging) {
     selectedAccessory.x = mx - dragOffset.x;
@@ -173,7 +196,8 @@ function drawCanvas() {
     ctx.drawImage(acc.img, -acc.width / 2, -acc.height / 2, acc.width, acc.height);
     ctx.restore();
 
-    if (acc === selectedAccessory) {
+    // Draw handles **only on hover**
+    if (acc === selectedAccessory && acc === hoveredAccessory) {
       // Red resize handle
       ctx.fillStyle = 'red';
       ctx.fillRect(acc.x + acc.width - 5, acc.y + acc.height - 5, 10, 10);
@@ -206,8 +230,16 @@ undoBtn.addEventListener('click', () => {
 
 // Download
 downloadBtn.addEventListener('click', () => {
+  // Hide handles before download
+  const savedSelected = selectedAccessory;
+  selectedAccessory = null;
+  drawCanvas();
+
   const link = document.createElement('a');
   link.download = 'my_photo.png';
   link.href = canvas.toDataURL('image/png');
   link.click();
-});
+
+  // Restore handles
+  selectedAccessory = savedSelected;
+  drawCanvas();
