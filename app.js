@@ -2,12 +2,16 @@ const uploadInput = document.getElementById('upload');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
+const undoBtn = document.getElementById('undoBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+
 canvas.width = 500;
 canvas.height = 500;
 
 let userImage = null;
 let accessories = [];
 let selectedAccessory = null;
+let historyStack = []; // Stack for undo
 
 // Load user image
 uploadInput.addEventListener('change', (e) => {
@@ -19,6 +23,8 @@ uploadInput.addEventListener('change', (e) => {
     const img = new Image();
     img.onload = function() {
       userImage = img;
+      accessories = [];
+      historyStack = [];
       drawCanvas();
     };
     img.src = event.target.result;
@@ -40,6 +46,7 @@ function startDrag(e) {
     height: e.target.height
   };
   accessories.push(selectedAccessory);
+  saveHistory();
 
   canvas.addEventListener('mousemove', dragAccessory);
   canvas.addEventListener('mouseup', dropAccessory);
@@ -70,3 +77,25 @@ function drawCanvas() {
     ctx.drawImage(acc.img, acc.x, acc.y, acc.width, acc.height);
   });
 }
+
+// Undo functionality
+function saveHistory() {
+  // Save a copy of accessories array
+  historyStack.push(accessories.map(acc => ({ ...acc })));
+}
+
+undoBtn.addEventListener('click', () => {
+  if (historyStack.length > 0) {
+    historyStack.pop(); // Remove last action
+    accessories = historyStack.length > 0 ? historyStack[historyStack.length - 1].map(acc => ({ ...acc })) : [];
+    drawCanvas();
+  }
+});
+
+// Download image
+downloadBtn.addEventListener('click', () => {
+  const link = document.createElement('a');
+  link.download = 'my_photo.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
