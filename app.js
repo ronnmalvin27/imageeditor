@@ -13,6 +13,7 @@ let userImageDims = { w: 0, h: 0 };
 let accessories = [];
 let selectedAccessory = null;
 let historyStack = [];
+let isResizing = false;
 
 // Load user image
 uploadInput.addEventListener('change', (e) => {
@@ -23,19 +24,17 @@ uploadInput.addEventListener('change', (e) => {
   reader.onload = function(event) {
     const img = new Image();
     img.onload = function() {
-      // Convert JPGs to canvas-friendly RGB format automatically
+      // Convert JPG to PNG internally to avoid canvas issues
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
       tempCanvas.width = img.width;
       tempCanvas.height = img.height;
       tempCtx.drawImage(img, 0, 0);
 
-      const dataURL = tempCanvas.toDataURL('image/png'); // always PNG for canvas
+      const dataURL = tempCanvas.toDataURL('image/png');
       const finalImg = new Image();
       finalImg.onload = function() {
         userImage = finalImg;
-
-        // Scale image to fit canvas while keeping aspect ratio
         const scale = Math.min(canvas.width / finalImg.width, canvas.height / finalImg.height);
         userImageDims.w = finalImg.width * scale;
         userImageDims.h = finalImg.height * scale;
@@ -51,22 +50,20 @@ uploadInput.addEventListener('change', (e) => {
   reader.readAsDataURL(file);
 });
 
-// Accessory drag & drop
+// Add accessory
 document.querySelectorAll('.accessory').forEach(img => {
   img.addEventListener('mousedown', startDrag);
 });
 
 function startDrag(e) {
   const img = e.target;
-
   selectedAccessory = {
     img: img,
     x: 100,
     y: 100,
-    width: img.naturalWidth / 4, // scale down
+    width: img.naturalWidth / 4,
     height: img.naturalHeight / 4
   };
-
   accessories.push(selectedAccessory);
   saveHistory();
 
@@ -75,6 +72,7 @@ function startDrag(e) {
 }
 
 function dragAccessory(e) {
+  if (!selectedAccessory || isResizing) return;
   const rect = canvas.getBoundingClientRect();
   selectedAccessory.x = e.clientX - rect.left - selectedAccessory.width / 2;
   selectedAccessory.y = e.clientY - rect.top - selectedAccessory.height / 2;
@@ -85,6 +83,45 @@ function dropAccessory() {
   canvas.removeEventListener('mousemove', dragAccessory);
   canvas.removeEventListener('mouseup', dropAccessory);
   selectedAccessory = null;
+  isResizing = false;
+}
+
+// Resize accessory via bottom-right handle
+canvas.addEventListener('mousedown', function(e) {
+  if (!selectedAccessory) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  const handleSize = 10;
+
+  if (
+    mouseX >= selectedAccessory.x + selectedAccessory.width - handleSize &&
+    mouseX <= selectedAccessory.x + selectedAccessory.width + handleSize &&
+    mouseY >= selectedAccessory.y + selectedAccessory.height - handleSize &&
+    mouseY <= selectedAccessory.y + selectedAccessory.height + handleSize
+  ) {
+    isResizing = true;
+    canvas.addEventListener('mousemove', resizeAccessory);
+    canvas.addEventListener('mouseup', stopResize);
+  }
+});
+
+function resizeAccessory(e) {
+  if (!selectedAccessory || !isResizing) return;
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  selectedAccessory.width = Math.max(20, mouseX - selectedAccessory.x);
+  selectedAccessory.height = Math.max(20, mouseY - selectedAccessory.y);
+  drawCanvas();
+}
+
+function stopResize() {
+  isResizing = false;
+  canvas.removeEventListener('mousemove', resizeAccessory);
+  canvas.removeEventListener('mouseup', stopResize);
 }
 
 // Draw everything
@@ -99,6 +136,9 @@ function drawCanvas() {
 
   accessories.forEach(acc => {
     ctx.drawImage(acc.img, acc.x, acc.y, acc.width, acc.height);
+    // Draw resize handle
+    ctx.fillStyle = 'red';
+    ctx.fillRect(acc.x + acc.width - 5, acc.y + acc.height - 5, 10, 10);
   });
 }
 
