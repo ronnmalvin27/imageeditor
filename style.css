@@ -1,23 +1,48 @@
 body {
     font-family: Arial, sans-serif;
     text-align: center;
-    background-color: #f0f0f0;
+    background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 20px 20px;
+    margin: 0;
+    padding: 20px;
 }
 
-canvas {
-    border: 2px solid #333;
-    cursor: default;
-    background-color: transparent; /* ensure canvas background is transparent */
+h1 {
+    margin-bottom: 20px;
+}
+
+#accessory-container {
+    margin: 10px 0;
 }
 
 .accessory {
     width: 80px;
     margin: 10px;
     cursor: pointer;
+    border: 1px solid #888;
+    border-radius: 4px;
+    transition: transform 0.2s;
+}
+
+.accessory:hover {
+    transform: scale(1.1);
+}
+
+#canvas-wrapper {
+    display: inline-block;
+    position: relative;
+    border: 2px solid #333;
+    background-color: transparent; /* ensure canvas is transparent */
+}
+
+canvas {
+    display: block;
+    background-color: transparent; /* transparency preserved */
+    cursor: default;
 }
 
 button {
-    margin: 10px;
+    margin: 10px 5px;
     padding: 8px 16px;
     font-size: 16px;
+    cursor: pointer;
 }
