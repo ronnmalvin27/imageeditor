@@ -1,7 +1,7 @@
 body {
     font-family: Arial, sans-serif;
     text-align: center;
-    background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 20px 20px;
+    background-color: #fff; /* simple white background */
     margin: 0;
     padding: 20px;
 }
@@ -27,16 +27,11 @@ h1 {
     transform: scale(1.1);
 }
 
-#canvas-wrapper {
-    display: inline-block;
-    position: relative;
-    border: 2px solid #333;
-    background-color: transparent; /* ensure canvas is transparent */
-}
-
 canvas {
     display: block;
-    background-color: transparent; /* transparency preserved */
+    margin: 20px auto;
+    border: 2px solid #333;
+    background-color: transparent; /* canvas itself transparent */
     cursor: default;
 }
 
