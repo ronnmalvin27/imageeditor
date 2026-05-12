@@ -9,10 +9,10 @@ canvas.width = 500;
 canvas.height = 500;
 
 let userImage = null;
-let userImageDims = { w: 0, h: 0 }; // Store scaled dimensions
+let userImageDims = { w: 0, h: 0 };
 let accessories = [];
 let selectedAccessory = null;
-let historyStack = []; // Stack for undo
+let historyStack = [];
 
 // Load user image
 uploadInput.addEventListener('change', (e) => {
@@ -23,16 +23,28 @@ uploadInput.addEventListener('change', (e) => {
   reader.onload = function(event) {
     const img = new Image();
     img.onload = function() {
-      userImage = img;
+      // Convert JPGs to canvas-friendly RGB format automatically
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCanvas.width = img.width;
+      tempCanvas.height = img.height;
+      tempCtx.drawImage(img, 0, 0);
 
-      // Scale image to fit canvas while maintaining aspect ratio
-      const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-      userImageDims.w = img.width * scale;
-      userImageDims.h = img.height * scale;
+      const dataURL = tempCanvas.toDataURL('image/png'); // always PNG for canvas
+      const finalImg = new Image();
+      finalImg.onload = function() {
+        userImage = finalImg;
 
-      accessories = [];
-      historyStack = [];
-      drawCanvas();
+        // Scale image to fit canvas while keeping aspect ratio
+        const scale = Math.min(canvas.width / finalImg.width, canvas.height / finalImg.height);
+        userImageDims.w = finalImg.width * scale;
+        userImageDims.h = finalImg.height * scale;
+
+        accessories = [];
+        historyStack = [];
+        drawCanvas();
+      };
+      finalImg.src = dataURL;
     };
     img.src = event.target.result;
   };
@@ -47,12 +59,11 @@ document.querySelectorAll('.accessory').forEach(img => {
 function startDrag(e) {
   const img = e.target;
 
-  // Use naturalWidth and naturalHeight for actual image size
   selectedAccessory = {
     img: img,
     x: 100,
     y: 100,
-    width: img.naturalWidth / 4, // scale down if needed
+    width: img.naturalWidth / 4, // scale down
     height: img.naturalHeight / 4
   };
 
@@ -81,7 +92,6 @@ function drawCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (userImage) {
-    // Draw image centered
     const x = (canvas.width - userImageDims.w) / 2;
     const y = (canvas.height - userImageDims.h) / 2;
     ctx.drawImage(userImage, x, y, userImageDims.w, userImageDims.h);
@@ -92,21 +102,20 @@ function drawCanvas() {
   });
 }
 
-// Undo functionality
+// Undo
 function saveHistory() {
-  // Save a copy of accessories array
   historyStack.push(accessories.map(acc => ({ ...acc })));
 }
 
 undoBtn.addEventListener('click', () => {
   if (historyStack.length > 0) {
-    historyStack.pop(); // Remove last action
+    historyStack.pop();
     accessories = historyStack.length > 0 ? historyStack[historyStack.length - 1].map(acc => ({ ...acc })) : [];
     drawCanvas();
   }
 });
 
-// Download image
+// Download
 downloadBtn.addEventListener('click', () => {
   const link = document.createElement('a');
   link.download = 'my_photo.png';
