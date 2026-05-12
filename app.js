@@ -20,7 +20,7 @@ let isDragging = false;
 let isResizing = false;
 let isRotating = false;
 
-// Load user image (JPG/PNG supported)
+// Load user image
 uploadInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -29,32 +29,20 @@ uploadInput.addEventListener('change', (e) => {
   reader.onload = function(event) {
     const img = new Image();
     img.onload = function() {
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
-      tempCanvas.width = img.width;
-      tempCanvas.height = img.height;
-      tempCtx.drawImage(img, 0, 0);
-      const dataURL = tempCanvas.toDataURL('image/png');
-
-      const finalImg = new Image();
-      finalImg.onload = function() {
-        userImage = finalImg;
-        const scale = Math.min(canvas.width / finalImg.width, canvas.height / finalImg.height);
-        userImageDims.w = finalImg.width * scale;
-        userImageDims.h = finalImg.height * scale;
-
-        accessories = [];
-        historyStack = [];
-        drawCanvas();
-      };
-      finalImg.src = dataURL;
+      const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+      userImage = img;
+      userImageDims.w = img.width * scale;
+      userImageDims.h = img.height * scale;
+      accessories = [];
+      historyStack = [];
+      drawCanvas();
     };
     img.src = event.target.result;
   };
   reader.readAsDataURL(file);
 });
 
-// Add accessory to canvas
+// Add accessory
 document.querySelectorAll('.accessory').forEach(img => {
   img.addEventListener('mousedown', () => {
     const acc = {
@@ -71,7 +59,7 @@ document.querySelectorAll('.accessory').forEach(img => {
   });
 });
 
-// Helper: check if mouse is inside accessory (ignores rotation)
+// Check if mouse is inside accessory (ignores rotation)
 function isMouseOnAccessory(acc, mx, my) {
   const cx = acc.x + acc.width / 2;
   const cy = acc.y + acc.height / 2;
@@ -94,21 +82,20 @@ canvas.addEventListener('mousedown', e => {
   for (let i = accessories.length - 1; i >= 0; i--) {
     const acc = accessories[i];
 
-    // Rotate handle (blue) - rotated
+    // Rotate handle (blue)
     const cx = acc.x + acc.width / 2;
     const cy = acc.y + acc.height / 2;
     const handleOffset = { x: 0, y: -acc.height/2 - 20 };
     const angle = acc.rotation * Math.PI / 180;
     const handleX = cx + handleOffset.x * Math.cos(angle) - handleOffset.y * Math.sin(angle);
     const handleY = cy + handleOffset.x * Math.sin(angle) + handleOffset.y * Math.cos(angle);
-
     if (mx >= handleX - 5 && mx <= handleX + 5 && my >= handleY - 5 && my <= handleY + 5) {
       selectedAccessory = acc;
       isRotating = true;
       return;
     }
 
-    // Resize handle (red) - bottom-right
+    // Resize handle (red)
     const resizeX = acc.x + acc.width;
     const resizeY = acc.y + acc.height;
     if (mx >= resizeX - 5 && mx <= resizeX + 5 && my >= resizeY - 5 && my <= resizeY + 5) {
@@ -117,7 +104,7 @@ canvas.addEventListener('mousedown', e => {
       return;
     }
 
-    // Accessory body for dragging
+    // Drag
     if (isMouseOnAccessory(acc, mx, my)) {
       selectedAccessory = acc;
       isDragging = true;
@@ -143,7 +130,7 @@ canvas.addEventListener('mousemove', e => {
     }
   }
 
-  // Cursor changes
+  // Cursor
   if (hoveredAccessory) {
     canvas.style.cursor = 'move';
   } else {
@@ -152,10 +139,10 @@ canvas.addEventListener('mousemove', e => {
 
   if (!selectedAccessory) {
     drawCanvas();
+    return;
   }
 
-  if (!selectedAccessory) return;
-
+  // Drag, resize, rotate
   if (isDragging) {
     selectedAccessory.x = mx - dragOffset.x;
     selectedAccessory.y = my - dragOffset.y;
@@ -181,14 +168,14 @@ canvas.addEventListener('mouseup', () => {
 function drawCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw user image
+  // User image
   if (userImage) {
     const x = (canvas.width - userImageDims.w) / 2;
     const y = (canvas.height - userImageDims.h) / 2;
     ctx.drawImage(userImage, x, y, userImageDims.w, userImageDims.h);
   }
 
-  // Draw accessories
+  // Accessories
   accessories.forEach(acc => {
     ctx.save();
     ctx.translate(acc.x + acc.width / 2, acc.y + acc.height / 2);
@@ -196,8 +183,8 @@ function drawCanvas() {
     ctx.drawImage(acc.img, -acc.width / 2, -acc.height / 2, acc.width, acc.height);
     ctx.restore();
 
-    // Draw handles **only on hover**
-    if (acc === selectedAccessory && acc === hoveredAccessory) {
+    // Draw handles **on hover only**
+    if (acc === hoveredAccessory) {
       // Red resize handle
       ctx.fillStyle = 'red';
       ctx.fillRect(acc.x + acc.width - 5, acc.y + acc.height - 5, 10, 10);
@@ -230,9 +217,8 @@ undoBtn.addEventListener('click', () => {
 
 // Download
 downloadBtn.addEventListener('click', () => {
-  // Hide handles before download
   const savedSelected = selectedAccessory;
-  selectedAccessory = null;
+  selectedAccessory = null; // hide handles
   drawCanvas();
 
   const link = document.createElement('a');
@@ -240,6 +226,6 @@ downloadBtn.addEventListener('click', () => {
   link.href = canvas.toDataURL('image/png');
   link.click();
 
-  // Restore handles
   selectedAccessory = savedSelected;
   drawCanvas();
+});
