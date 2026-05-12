@@ -170,4 +170,33 @@ function drawCanvas() {
     if (acc === selectedAccessory) {
       // Resize handle
       ctx.fillStyle = 'red';
-      ctx.fillRect(acc.width/2 - 5, acc.height/2 - 5, 10, 
+      ctx.fillRect(acc.width/2 - 5, acc.height/2 - 5, 10, 10);
+      // Rotate handle
+      ctx.fillStyle = 'blue';
+      ctx.fillRect(-5, -acc.height/2 - 20, 10, 10);
+    }
+
+    ctx.restore();
+  });
+}
+
+// Undo
+function saveHistory() {
+  historyStack.push(accessories.map(acc => ({...acc})));
+}
+
+undoBtn.addEventListener('click', () => {
+  if (historyStack.length > 0) {
+    historyStack.pop();
+    accessories = historyStack.length > 0 ? historyStack[historyStack.length-1].map(acc => ({...acc})) : [];
+    drawCanvas();
+  }
+});
+
+// Download
+downloadBtn.addEventListener('click', () => {
+  const link = document.createElement('a');
+  link.download = 'my_photo.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
