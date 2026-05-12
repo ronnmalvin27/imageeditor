@@ -19,7 +19,7 @@ let isDragging = false;
 let isResizing = false;
 let isRotating = false;
 
-// Load user image (supports JPG/PNG)
+// Load user image (JPG/PNG supported)
 uploadInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -28,7 +28,6 @@ uploadInput.addEventListener('change', (e) => {
   reader.onload = function(event) {
     const img = new Image();
     img.onload = function() {
-      // Convert to PNG internally for canvas
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
       tempCanvas.width = img.width;
@@ -54,7 +53,7 @@ uploadInput.addEventListener('change', (e) => {
   reader.readAsDataURL(file);
 });
 
-// Add new accessory to canvas
+// Add accessory to canvas
 document.querySelectorAll('.accessory').forEach(img => {
   img.addEventListener('mousedown', () => {
     const acc = {
@@ -71,7 +70,7 @@ document.querySelectorAll('.accessory').forEach(img => {
   });
 });
 
-// Helper: check if mouse is inside accessory
+// Helper: check if mouse is inside accessory (ignores rotation)
 function isMouseOnAccessory(acc, mx, my) {
   const cx = acc.x + acc.width / 2;
   const cy = acc.y + acc.height / 2;
@@ -94,16 +93,20 @@ canvas.addEventListener('mousedown', e => {
   for (let i = accessories.length - 1; i >= 0; i--) {
     const acc = accessories[i];
 
-    // Check rotate handle (blue, top)
-    const rotateX = acc.x + acc.width / 2;
-    const rotateY = acc.y - 20;
-    if (mx >= rotateX - 5 && mx <= rotateX + 5 && my >= rotateY - 5 && my <= rotateY + 5) {
+    // Rotate handle (blue) - rotated correctly
+    const cx = acc.x + acc.width / 2;
+    const cy = acc.y + acc.height / 2;
+    const handleOffset = { x: 0, y: -acc.height/2 - 20 };
+    const angle = acc.rotation * Math.PI / 180;
+    const handleX = cx + handleOffset.x * Math.cos(angle) - handleOffset.y * Math.sin(angle);
+    const handleY = cy + handleOffset.x * Math.sin(angle) + handleOffset.y * Math.cos(angle);
+    if (mx >= handleX - 5 && mx <= handleX + 5 && my >= handleY - 5 && my <= handleY + 5) {
       selectedAccessory = acc;
       isRotating = true;
       return;
     }
 
-    // Check resize handle (red, bottom-right)
+    // Resize handle (red) - bottom-right
     const resizeX = acc.x + acc.width;
     const resizeY = acc.y + acc.height;
     if (mx >= resizeX - 5 && mx <= resizeX + 5 && my >= resizeY - 5 && my <= resizeY + 5) {
@@ -112,7 +115,7 @@ canvas.addEventListener('mousedown', e => {
       return;
     }
 
-    // Check accessory body for dragging
+    // Accessory body for dragging
     if (isMouseOnAccessory(acc, mx, my)) {
       selectedAccessory = acc;
       isDragging = true;
@@ -171,13 +174,19 @@ function drawCanvas() {
     ctx.restore();
 
     if (acc === selectedAccessory) {
-      // Red resize handle (bottom-right)
+      // Red resize handle
       ctx.fillStyle = 'red';
       ctx.fillRect(acc.x + acc.width - 5, acc.y + acc.height - 5, 10, 10);
 
-      // Blue rotate handle (top-center)
+      // Blue rotate handle
+      const cx = acc.x + acc.width / 2;
+      const cy = acc.y + acc.height / 2;
+      const angle = acc.rotation * Math.PI / 180;
+      const handleOffset = { x: 0, y: -acc.height / 2 - 20 };
+      const handleX = cx + handleOffset.x * Math.cos(angle) - handleOffset.y * Math.sin(angle);
+      const handleY = cy + handleOffset.x * Math.sin(angle) + handleOffset.y * Math.cos(angle);
       ctx.fillStyle = 'blue';
-      ctx.fillRect(acc.x + acc.width / 2 - 5, acc.y - 20 - 5, 10, 10);
+      ctx.fillRect(handleX - 5, handleY - 5, 10, 10);
     }
   });
 }
