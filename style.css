@@ -41,3 +41,14 @@ canvas {
   margin: 0 10px;
   user-select: none;
 }
+
+.buttons {
+  margin-top: 10px;
+}
+
+button {
+  padding: 8px 16px;
+  margin: 0 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
