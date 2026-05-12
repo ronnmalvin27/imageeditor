@@ -9,6 +9,7 @@ canvas.width = 500;
 canvas.height = 500;
 
 let userImage = null;
+let userImageDims = { w: 0, h: 0 }; // Store scaled dimensions
 let accessories = [];
 let selectedAccessory = null;
 let historyStack = []; // Stack for undo
@@ -23,6 +24,12 @@ uploadInput.addEventListener('change', (e) => {
     const img = new Image();
     img.onload = function() {
       userImage = img;
+
+      // Scale image to fit canvas while maintaining aspect ratio
+      const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+      userImageDims.w = img.width * scale;
+      userImageDims.h = img.height * scale;
+
       accessories = [];
       historyStack = [];
       drawCanvas();
@@ -38,13 +45,17 @@ document.querySelectorAll('.accessory').forEach(img => {
 });
 
 function startDrag(e) {
+  const img = e.target;
+
+  // Use naturalWidth and naturalHeight for actual image size
   selectedAccessory = {
-    img: e.target,
+    img: img,
     x: 100,
     y: 100,
-    width: e.target.width,
-    height: e.target.height
+    width: img.naturalWidth / 4, // scale down if needed
+    height: img.naturalHeight / 4
   };
+
   accessories.push(selectedAccessory);
   saveHistory();
 
@@ -70,7 +81,10 @@ function drawCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (userImage) {
-    ctx.drawImage(userImage, 0, 0, canvas.width, canvas.height);
+    // Draw image centered
+    const x = (canvas.width - userImageDims.w) / 2;
+    const y = (canvas.height - userImageDims.h) / 2;
+    ctx.drawImage(userImage, x, y, userImageDims.w, userImageDims.h);
   }
 
   accessories.forEach(acc => {
