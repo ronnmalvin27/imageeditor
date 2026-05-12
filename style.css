@@ -1,7 +1,7 @@
 body {
     font-family: Arial, sans-serif;
     text-align: center;
-    background-color: #fff; /* simple white background */
+    background-color: #f0f0f0; /* gray background */
     margin: 0;
     padding: 20px;
 }
@@ -31,7 +31,7 @@ canvas {
     display: block;
     margin: 20px auto;
     border: 2px solid #333;
-    background-color: transparent; /* canvas itself transparent */
+    background-color: transparent; /* blank canvas until image uploaded */
     cursor: default;
 }
 
