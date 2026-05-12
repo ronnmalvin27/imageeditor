@@ -1,32 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Image Accessory Editor</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Accessory App</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Image Accessory Editor</h1>
+  <h1>Photo Accessory App</h1>
 
-    <!-- Image upload -->
+  <div class="container">
     <input type="file" id="upload" accept="image/*">
 
-    <!-- Accessories -->
-    <div id="accessory-container">
-        <img src="hat.png" class="accessory" alt="Hat">
-        <img src="glasses.png" class="accessory" alt="Glasses">
-        <img src="beard.png" class="accessory" alt="Beard">
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
     </div>
 
-    <!-- Canvas -->
-    <canvas id="canvas" width="500" height="500"></canvas>
-
-    <!-- Buttons -->
-    <div>
-        <button id="undoBtn">Undo</button>
-        <button id="downloadBtn">Download</button>
+    <div class="buttons">
+      <button id="undoBtn">Undo</button>
+      <button id="downloadBtn">Download</button>
     </div>
 
-    <script src="app.js"></script>
+    <div class="accessories">
+      <img src="hat.jpg" class="accessory" id="hat" draggable="true">
+      <img src="glassess.png" class="accessory" id="glasses" draggable="true">
+      <img src="blond.png" class="accessory" id="blond" draggable="true">
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
