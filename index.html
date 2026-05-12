@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Accessory App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Photo Accessory App</h1>
+
+  <div class="container">
+    <input type="file" id="upload" accept="image/*">
+    
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="accessories">
+      <img src="hat.png" class="accessory" id="hat" draggable="true">
+      <img src="glasses.png" class="accessory" id="glasses" draggable="true">
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
