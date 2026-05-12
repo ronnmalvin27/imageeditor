@@ -13,7 +13,11 @@ let userImageDims = { w: 0, h: 0 };
 let accessories = [];
 let selectedAccessory = null;
 let historyStack = [];
+
+let dragOffset = { x: 0, y: 0 };
+let isDragging = false;
 let isResizing = false;
+let isRotating = false;
 
 // Load user image
 uploadInput.addEventListener('change', (e) => {
@@ -24,7 +28,6 @@ uploadInput.addEventListener('change', (e) => {
   reader.onload = function(event) {
     const img = new Image();
     img.onload = function() {
-      // Convert JPG to PNG internally to avoid canvas issues
       const tempCanvas = document.createElement('canvas');
       const tempCtx = tempCanvas.getContext('2d');
       tempCanvas.width = img.width;
@@ -50,115 +53,121 @@ uploadInput.addEventListener('change', (e) => {
   reader.readAsDataURL(file);
 });
 
-// Add accessory
+// Add new accessory
 document.querySelectorAll('.accessory').forEach(img => {
-  img.addEventListener('mousedown', startDrag);
+  img.addEventListener('mousedown', () => {
+    const acc = {
+      img: img,
+      x: 150,
+      y: 150,
+      width: img.naturalWidth / 4,
+      height: img.naturalHeight / 4,
+      rotation: 0
+    };
+    accessories.push(acc);
+    saveHistory();
+    drawCanvas();
+  });
 });
 
-function startDrag(e) {
-  const img = e.target;
-  selectedAccessory = {
-    img: img,
-    x: 100,
-    y: 100,
-    width: img.naturalWidth / 4,
-    height: img.naturalHeight / 4
-  };
-  accessories.push(selectedAccessory);
-  saveHistory();
-
-  canvas.addEventListener('mousemove', dragAccessory);
-  canvas.addEventListener('mouseup', dropAccessory);
+// Helper: check if mouse is inside accessory
+function isMouseOnAccessory(acc, mx, my) {
+  const cx = acc.x + acc.width / 2;
+  const cy = acc.y + acc.height / 2;
+  const dx = mx - cx;
+  const dy = my - cy;
+  const angle = -acc.rotation * Math.PI / 180;
+  const rx = dx * Math.cos(angle) - dy * Math.sin(angle);
+  const ry = dx * Math.sin(angle) + dy * Math.cos(angle);
+  return rx > -acc.width / 2 && rx < acc.width / 2 && ry > -acc.height / 2 && ry < acc.height / 2;
 }
 
-function dragAccessory(e) {
-  if (!selectedAccessory || isResizing) return;
+// Mouse down
+canvas.addEventListener('mousedown', e => {
   const rect = canvas.getBoundingClientRect();
-  selectedAccessory.x = e.clientX - rect.left - selectedAccessory.width / 2;
-  selectedAccessory.y = e.clientY - rect.top - selectedAccessory.height / 2;
-  drawCanvas();
-}
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
 
-function dropAccessory() {
-  canvas.removeEventListener('mousemove', dragAccessory);
-  canvas.removeEventListener('mouseup', dropAccessory);
   selectedAccessory = null;
-  isResizing = false;
-}
+  for (let i = accessories.length - 1; i >= 0; i--) {
+    if (isMouseOnAccessory(accessories[i], mx, my)) {
+      selectedAccessory = accessories[i];
+      dragOffset.x = mx - selectedAccessory.x;
+      dragOffset.y = my - selectedAccessory.y;
 
-// Resize accessory via bottom-right handle
-canvas.addEventListener('mousedown', function(e) {
-  if (!selectedAccessory) return;
+      // Check handles for resize or rotate
+      const handleSize = 15;
+      // Bottom-right resize handle
+      if (mx >= selectedAccessory.x + selectedAccessory.width - handleSize &&
+          mx <= selectedAccessory.x + selectedAccessory.width + handleSize &&
+          my >= selectedAccessory.y + selectedAccessory.height - handleSize &&
+          my <= selectedAccessory.y + selectedAccessory.height + handleSize) {
+        isResizing = true;
+      }
+      // Top-center rotate handle
+      else if (mx >= selectedAccessory.x + selectedAccessory.width/2 - handleSize/2 &&
+               mx <= selectedAccessory.x + selectedAccessory.width/2 + handleSize/2 &&
+               my >= selectedAccessory.y - 30 &&
+               my <= selectedAccessory.y - 20) {
+        isRotating = true;
+      }
+      else {
+        isDragging = true;
+      }
 
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-  const handleSize = 10;
-
-  if (
-    mouseX >= selectedAccessory.x + selectedAccessory.width - handleSize &&
-    mouseX <= selectedAccessory.x + selectedAccessory.width + handleSize &&
-    mouseY >= selectedAccessory.y + selectedAccessory.height - handleSize &&
-    mouseY <= selectedAccessory.y + selectedAccessory.height + handleSize
-  ) {
-    isResizing = true;
-    canvas.addEventListener('mousemove', resizeAccessory);
-    canvas.addEventListener('mouseup', stopResize);
+      drawCanvas();
+      break;
+    }
   }
 });
 
-function resizeAccessory(e) {
-  if (!selectedAccessory || !isResizing) return;
+// Mouse move
+canvas.addEventListener('mousemove', e => {
+  if (!selectedAccessory) return;
   const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
 
-  selectedAccessory.width = Math.max(20, mouseX - selectedAccessory.x);
-  selectedAccessory.height = Math.max(20, mouseY - selectedAccessory.y);
+  if (isDragging) {
+    selectedAccessory.x = mx - dragOffset.x;
+    selectedAccessory.y = my - dragOffset.y;
+  }
+  else if (isResizing) {
+    selectedAccessory.width = Math.max(20, mx - selectedAccessory.x);
+    selectedAccessory.height = Math.max(20, my - selectedAccessory.y);
+  }
+  else if (isRotating) {
+    const cx = selectedAccessory.x + selectedAccessory.width/2;
+    const cy = selectedAccessory.y + selectedAccessory.height/2;
+    const angle = Math.atan2(my - cy, mx - cx);
+    selectedAccessory.rotation = angle * 180 / Math.PI + 90;
+  }
+
   drawCanvas();
-}
+});
 
-function stopResize() {
-  isResizing = false;
-  canvas.removeEventListener('mousemove', resizeAccessory);
-  canvas.removeEventListener('mouseup', stopResize);
-}
+// Mouse up
+canvas.addEventListener('mouseup', () => {
+  isDragging = isResizing = isRotating = false;
+});
 
 // Draw everything
 function drawCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   if (userImage) {
-    const x = (canvas.width - userImageDims.w) / 2;
-    const y = (canvas.height - userImageDims.h) / 2;
+    const x = (canvas.width - userImageDims.w)/2;
+    const y = (canvas.height - userImageDims.h)/2;
     ctx.drawImage(userImage, x, y, userImageDims.w, userImageDims.h);
   }
 
   accessories.forEach(acc => {
-    ctx.drawImage(acc.img, acc.x, acc.y, acc.width, acc.height);
-    // Draw resize handle
-    ctx.fillStyle = 'red';
-    ctx.fillRect(acc.x + acc.width - 5, acc.y + acc.height - 5, 10, 10);
-  });
-}
+    ctx.save();
+    ctx.translate(acc.x + acc.width/2, acc.y + acc.height/2);
+    ctx.rotate(acc.rotation * Math.PI / 180);
+    ctx.drawImage(acc.img, -acc.width/2, -acc.height/2, acc.width, acc.height);
 
-// Undo
-function saveHistory() {
-  historyStack.push(accessories.map(acc => ({ ...acc })));
-}
-
-undoBtn.addEventListener('click', () => {
-  if (historyStack.length > 0) {
-    historyStack.pop();
-    accessories = historyStack.length > 0 ? historyStack[historyStack.length - 1].map(acc => ({ ...acc })) : [];
-    drawCanvas();
-  }
-});
-
-// Download
-downloadBtn.addEventListener('click', () => {
-  const link = document.createElement('a');
-  link.download = 'my_photo.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-});
+    if (acc === selectedAccessory) {
+      // Resize handle
+      ctx.fillStyle = 'red';
+      ctx.fillRect(acc.width/2 - 5, acc.height/2 - 5, 10, 
